@@ -50,7 +50,7 @@ async function request(path, { method = "GET", body } = {}) {
       method, headers, body: body ? (isForm ? body : JSON.stringify(body)) : undefined
     });
   } catch (e) {
-    throw new Error("Backend se connect nahi ho paya. Kya uvicorn chal raha hai? Kya main.py mein CORS lagaya hai?");
+    throw new Error("Connecting with Backend...");
   }
   const data = await res.json().catch(() => null);
 

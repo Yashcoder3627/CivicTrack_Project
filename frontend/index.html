@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CivicTrack - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth">
+  <div class="auth-brand">
+    <div class="brand"><div class="logo"><i></i></div>CivicTrack</div>
+    <div>
+      <h1>Report it. Track it. See it fixed.</h1>
+      <p>Raise a complaint about roads, water, electricity or sanitation and follow its status until it is resolved.</p>
+    </div>
+    <div style="font-size:14px;color:#9DB8B3"></div>
+  </div>
+
+  <div class="auth-side">
+    <div class="auth-card">
+
+      <!-- LOGIN: backend ka POST /auth/login -->
+      <div id="loginBox">
+        <h2>Welcome back</h2>
+        <p class="sub" style="margin-bottom:20px">Sign in to continue.</p>
+        <form id="loginForm">
+          <div class="field"><label for="lemail">Email</label><input id="lemail" type="email" required></div>
+          <div class="field"><label for="lpass">Password</label><input id="lpass" type="password" required></div>
+          <p class="msg" id="loginMsg"></p>
+          <button class="btn block" type="submit">Sign in</button>
+        </form>
+        <p class="switch" style="margin-top:20px">New here? <button type="button" id="toSignup">Create an account</button></p>
+      </div>
+
+      <!-- SIGNUP: backend ka POST /auth/signup -->
+      <div id="signupBox" hidden>
+        <h2>Create account</h2>
+        <p class="sub" style="margin-bottom:20px">Citizens can report and track complaints.</p>
+        <form id="signupForm">
+          <div class="field"><label for="sname">Full name</label><input id="sname" type="text" required></div>
+          <div class="field"><label for="semail">Email</label><input id="semail" type="email" required></div>
+          <div class="field"><label for="spass">Password</label><input id="spass" type="password" minlength="6" required></div>
+          <p class="msg" id="signupMsg"></p>
+          <button class="btn block" type="submit">Sign up</button>
+        </form>
+        <p class="switch" style="margin-top:20px">Already registered? <button type="button" id="toLogin">Sign in</button></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  // Pehle se login hai toh seedha apne page par bhej do.
+  if (Auth.token && HOME[Auth.role]) location.href = HOME[Auth.role];
+
+  const loginBox = document.getElementById("loginBox");
+  const signupBox = document.getElementById("signupBox");
+  document.getElementById("toSignup").onclick = () => { loginBox.hidden = true; signupBox.hidden = false; };
+  document.getElementById("toLogin").onclick = () => { signupBox.hidden = true; loginBox.hidden = false; };
+
+  // ---- LOGIN ----
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("loginMsg");
+    showMsg(msg, "");
+    try {
+      const data = await API.login(
+        document.getElementById("lemail").value,
+        document.getElementById("lpass").value
+      );
+      Auth.save(data);                              // token, role, name save
+      location.href = HOME[data.role] || "citizen.html";
+    } catch (err) {
+      showMsg(msg, err.message, "error");
+    }
+  });
+
+  // ---- SIGNUP ----
+  document.getElementById("signupForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("signupMsg");
+    showMsg(msg, "");
+    try {
+      await API.signup(
+        document.getElementById("sname").value,
+        document.getElementById("semail").value,
+        document.getElementById("spass").value
+      );
+      // Account ban gaya. Ab login form par bhej do (login alag step hai).
+      document.getElementById("lemail").value = document.getElementById("semail").value;
+      signupBox.hidden = true;
+      loginBox.hidden = false;
+      showMsg(document.getElementById("loginMsg"), "Account created. Ab login karo.", "ok");
+    } catch (err) {
+      showMsg(msg, err.message, "error");
+    }
+  });
+</script>
+</body>
+</html>

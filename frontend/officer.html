@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CivicTrack - Officer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="topbar"></div>
+
+<div class="wrap">
+  <div>
+    <h1>Assigned to me</h1>
+    <p class="sub">Complaints the admin has given you. Update the status as you work on them.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Total</div><div class="value" id="sTotal">0</div></div>
+    <div class="stat"><div class="label" style="color:#92400E">Pending</div><div class="value" id="sPending">0</div></div>
+    <div class="stat"><div class="label" style="color:#1E40AF">In progress</div><div class="value" id="sProgress">0</div></div>
+    <div class="stat"><div class="label" style="color:#166534">Resolved</div><div class="value" id="sResolved">0</div></div>
+  </div>
+
+  <p class="msg" id="msg"></p>
+
+  <!-- backend: GET /complaints (officer ko sirf apni assigned) aur PATCH /complaints/{id}/status -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Complaint</th><th>Status</th><th>Change status</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="4">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  const STATUSES = ["Pending", "In Progress", "Resolved"];
+
+  if (requireRole("officer")) {
+    renderTopbar();
+    load();
+    document.getElementById("rows").addEventListener("click", onSave);
+  }
+
+    async function load() {
+    const rows = document.getElementById("rows");
+    try {
+      const items = asList(await API.complaints());
+
+      const count = (s) => items.filter(c => c.status === s).length;
+      document.getElementById("sTotal").textContent = items.length;
+      document.getElementById("sPending").textContent = count("Pending");
+      document.getElementById("sProgress").textContent = count("In Progress");
+      document.getElementById("sResolved").textContent = count("Resolved");
+
+      rows.innerHTML = items.length
+        ? items.map(c => `
+            <tr data-id="${esc(c.id)}">
+              <td style="font-weight:700;color:var(--muted)">#${esc(c.id)}</td>
+              <td><div class="t">${esc(c.title)}</div><div class="m">${esc(c.category)} · ${esc(c.location)}</div>
+                  <div class="m">${esc(c.description)}</div>
+                  ${c.image_path ? `<a href="${photoUrl(c.image_path)}" target="_blank"><img class="thumb" src="${photoUrl(c.image_path)}" alt="Photo"></a>` : ""}
+              </td>
+              <td>${badge(c.status)}</td>
+              <td>
+                <div class="save-cell">
+                  <select aria-label="New status">
+                    ${STATUSES.map(s => `<option ${s === c.status ? "selected" : ""}>${s}</option>`).join("")}
+                  </select>
+                  <button class="btn small" data-save>Save</button>
+                </div>
+              </td>
+            </tr>`).join("")
+        : '<tr><td colspan="4">No Complain Assigned.</td></tr>';
+    } catch (err) {
+      showMsg(document.getElementById("msg"), err.message, "error");
+      rows.innerHTML = "";
+    }
+  }
+
+  async function onSave(e) {
+    const btn = e.target.closest("[data-save]");
+    if (!btn) return;
+    const tr = btn.closest("tr");
+    const id = tr.dataset.id;
+    const status = tr.querySelector("select").value;
+    const msg = document.getElementById("msg");
+    showMsg(msg, "");
+    btn.disabled = true;
+    try {
+      await API.updateStatus(id, status);
+      showMsg(msg, `Complaint #${id} ka status "${status}" ho gaya.`, "ok");
+      load();
+    } catch (err) {
+      showMsg(msg, err.message, "error");
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

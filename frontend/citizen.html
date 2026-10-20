@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CivicTrack - My complaints</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="topbar"></div>
+
+<div class="wrap">
+  <div>
+    <h1>Your complaints</h1>
+    <p class="sub">Raise a new issue and follow its status.</p>
+  </div>
+
+  <div class="columns">
+    <!-- LEFT: meri complaints  (backend: GET /complaints) -->
+    <div class="col-main">
+      <div class="card">
+        <h2>My complaints</h2>
+        <div id="list"><p class="empty">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: nayi complaint  (backend: POST /complaints) -->
+    <div class="col-side">
+      <form class="card" id="form">
+        <h2>Raise a new complaint</h2>
+        <div class="field"><label for="title">Title</label>
+          <input id="title" type="text" placeholder="Short summary of the issue" required></div>
+        <div class="field"><label for="category">Category</label>
+          <select id="category">
+           <option >--Select--</option> <option>Roads</option><option>Water</option><option>Electricity</option><option>Sanitation</option>
+          </select></div>
+        <div class="field"><label for="description">Description</label>
+          <textarea id="description" rows="3" placeholder="What is the problem and since when?" required></textarea></div>
+        <div class="field"><label for="location">Location</label>
+          <input id="location" type="text" placeholder="Street, area, landmark" required></div>
+        <div class="field"><label for="photo">Photo (optional, max 2 MB)</label>
+          <input id="photo" type="file" accept="image/jpeg,image/png,image/webp"></div>
+        <p class="msg" id="formMsg"></p>
+        <button class="btn block" type="submit" id="submitBtn">Submit complaint</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (requireRole("citizen")) {
+    renderTopbar();
+    loadList();
+    document.getElementById("form").addEventListener("submit", submitComplaint);
+  }
+
+  // Complaints laao aur list mein dikhao
+  async function loadList() {
+    const list = document.getElementById("list");
+    try {
+      const items = asList(await API.complaints());
+      list.innerHTML = items.length
+        ? items.map(c => `
+            <div class="item">
+              <div>
+                <div class="t">${esc(c.title)}</div>
+                <div class="m">${esc(c.category)} · ${esc(c.location)}${c.created_at ? " · " + fmtDate(c.created_at) : ""}</div>
+                ${c.image_path ? `<a href="${photoUrl(c.image_path)}" target="_blank"><img class="thumb" src="${photoUrl(c.image_path)}" alt="Complaint photo"></a>` : ""}
+              </div>
+              ${badge(c.status)}
+            </div>`).join("")
+        : '<p class="empty">No Complain Register.</p>';
+    } catch (err) {
+      list.innerHTML = `<p class="msg error">${esc(err.message)}</p>`;
+    }
+  }
+
+  // Nayi complaint bhejo
+    async function submitComplaint(e) {
+    e.preventDefault();
+    const msg = document.getElementById("formMsg");
+    const btn = document.getElementById("submitBtn");
+    showMsg(msg, "");
+    btn.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append("title", document.getElementById("title").value);
+      fd.append("category", document.getElementById("category").value);
+      fd.append("description", document.getElementById("description").value);
+      fd.append("location", document.getElementById("location").value);
+      const file = document.getElementById("photo").files[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) throw new Error("Photo 2 MB se chhoti honi chahiye.");
+        fd.append("photo", file);
+      }
+      await API.createComplaint(fd);
+      e.target.reset();
+      showMsg(msg, "Complaint submit ho gayi.", "ok");
+      loadList();                                  // list dobara laao
+    } catch (err) {
+      showMsg(msg, err.message, "error");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

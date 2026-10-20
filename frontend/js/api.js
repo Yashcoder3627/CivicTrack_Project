@@ -57,7 +57,7 @@ async function request(path, { method = "GET", body } = {}) {
   if (res.status === 401 && Auth.token) {          // token galat ya expire
     Auth.clear();
     location.href = "index.html";
-    throw new Error("Dobara login karo.");
+    throw new Error("Login again.");
   }
   if (!res.ok) throw new Error(errorText(data) || "Error " + res.status);
   return data;

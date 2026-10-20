@@ -95,7 +95,7 @@
       document.getElementById("lemail").value = document.getElementById("semail").value;
       signupBox.hidden = true;
       loginBox.hidden = false;
-      showMsg(document.getElementById("loginMsg"), "Account created. Ab login karo.", "ok");
+      showMsg(document.getElementById("loginMsg"), "Account created.", "ok");
     } catch (err) {
       showMsg(msg, err.message, "error");
     }

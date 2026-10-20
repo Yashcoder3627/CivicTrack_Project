@@ -4,7 +4,9 @@
 // =====================================================================
 
 // Backend ka address. Deploy karne ke baad ise live URL se badal dena.
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? "http://127.0.0.1:8000"
+  : "https://civictrack-99b8.onrender.com";
 
 // ---------- Login ki jaankari browser mein save rakhna ----------
 const Auth = {
